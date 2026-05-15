@@ -37,17 +37,19 @@ async def cmd_model(message: Message):
     args = message.text.split(maxsplit=1)
     if len(args) < 2:
         current = storage.get_setting(user_id, "model", settings.free_claude_default_model)
+        client = ClaudeProxyClient(
+            settings.free_claude_base_url,
+            settings.free_claude_auth_token,
+            settings.free_claude_timeout_seconds,
+        )
         try:
-            client = ClaudeProxyClient(
-                settings.free_claude_base_url,
-                settings.free_claude_auth_token,
-                settings.free_claude_timeout_seconds,
-            )
             models = await client.list_models()
             models_list = "\n".join(f"• {m}" for m in models)
             await message.answer(f"Current model: {current}\nAvailable models:\n{models_list}")
         except Exception as e:
             await message.answer(f"Current model: {current}\nCould not fetch model list: {str(e)}")
+        finally:
+            await client.close()
     else:
         new_model = args[1].strip()
         storage.set_setting(user_id, "model", new_model)

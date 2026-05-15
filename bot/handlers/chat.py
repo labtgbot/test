@@ -4,7 +4,6 @@ from bot.config import settings
 from bot.utils.storage import storage
 from bot.services.claude_proxy import ClaudeProxyClient
 from bot.utils.media import transcribe_voice, extract_document_text
-import asyncio
 
 router = Router()
 
@@ -49,7 +48,7 @@ async def handle_streaming(message: Message, client: ClaudeProxyClient, messages
 async def handle_chat_message(message: Message):
     user_id = message.from_user.id
     chat = message.chat
-    bot_username = message.bot.username  # require bot.get_me() called at startup
+    bot_username = message.bot.username
 
     # Determine guest mode
     is_guest = False
@@ -146,7 +145,9 @@ async def handle_chat_message(message: Message):
         # Save assistant response to history if not guest
         if not is_guest:
             storage.add_message(user_id, "user", content_blocks)
-            storage.add_message(user_id, "assistant", reply_text)
+            storage.add_message(user_id, "assistant", [{"type": "text", "text": reply_text}])
 
     except Exception as e:
         await message.answer(f"❌ Error: {str(e)}")
+    finally:
+        await client.close()
