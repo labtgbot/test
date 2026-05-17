@@ -33,5 +33,22 @@ class Settings(BaseSettings):
             return [int(x.strip()) for x in v.split(',') if x.strip()]
         return v
 
-# Global settings instance
-settings = Settings()
+class _LazySettingsProxy:
+    """
+    Lazy proxy for Settings instance.
+    Delays actual Settings() construction until first attribute access,
+    allowing imports without required environment variables.
+    """
+    def __init__(self):
+        self._instance = None
+
+    def _get_instance(self):
+        if self._instance is None:
+            self._instance = Settings()
+        return self._instance
+
+    def __getattr__(self, name):
+        return getattr(self._get_instance(), name)
+
+# Global settings proxy
+settings = _LazySettingsProxy()
